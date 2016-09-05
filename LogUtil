@@ -1,0 +1,21 @@
+public class LogUtil {
+	private static final boolean LOG_ENABLE = BuildConfig.DEBUG;
+	public static final String TAG = "MyAPP";
+
+	static String clazz = Thread.currentThread().getStackTrace()[1].getClassName();
+	static String method = Thread.currentThread().getStackTrace()[1].getMethodName();
+
+
+	public static void d(String msg) {
+		if (LOG_ENABLE) {
+			Log.d(TAG, "Class" + clazz + "Method" + method + msg);
+		}
+	}
+
+	public static void e(String msg) {
+		if (LOG_ENABLE) {
+			Log.d(TAG, "Class" + clazz + "Method" + method + msg);
+		}
+	}
+
+}
