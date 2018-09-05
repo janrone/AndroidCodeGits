@@ -1,0 +1,124 @@
+
+import android.util.Log;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.protocol.HTTP;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.android.volley.*;
+import com.android.volley.toolbox.HttpHeaderParser;
+import com.android.volley.toolbox.JsonRequest;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+
+
+/**
+ * Created by Tuteng on 2018/3/23.
+ */
+
+
+public class MultiPartFileRequest extends Request<String> {
+
+    MultipartEntityBuilder entity = MultipartEntityBuilder.create();
+    HttpEntity httpentity;
+
+    private static final String FILE_PART_NAME = "file";
+
+    private final Response.Listener<String> mListener;
+    private File mFilePart;
+    private Map<String, String> mStringPart = new HashMap<>();
+    private Map<String, File> mFileUploads = new HashMap<>();
+
+    public MultiPartFileRequest(int method, String url,
+                                Response.Listener listener, Response.ErrorListener errorListener) {
+        super(method, url, errorListener);
+        mListener = listener;
+        entity.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+        buildMultipartEntity();
+    }
+
+    public MultiPartFileRequest(int method, String url,
+                                Response.Listener listener, Response.ErrorListener errorListener,
+                                Map<String, String> params, Map<String, File> fileUploads) {
+        super(method, url, errorListener);
+        mListener = listener;
+        this.mStringPart = params;
+        this.mFileUploads = fileUploads;
+        entity.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+        buildMultipartEntity();
+    }
+
+    public void addStringBody(Map<String, String> params) {
+        mStringPart = params;
+    }
+
+    public void addFile(File file) {
+        mFilePart = file;
+    }
+
+    public Map<String, File> addFileUploads(Map<String, File> fileUploads) {
+        return mFileUploads = fileUploads;
+    }
+
+    private void buildMultipartEntity() {
+        ContentType contentType = ContentType.create(HTTP.PLAIN_TEXT_TYPE, HTTP.UTF_8);
+
+        for (Map.Entry<String, File> entry : mFileUploads.entrySet()) {
+            entity.addPart(entry.getKey(), new FileBody(entry.getValue()));
+        }
+        for (Map.Entry<String, String> entry : mStringPart.entrySet()) {
+            entity.addTextBody(entry.getKey(), entry.getValue(), contentType);
+        }
+    }
+
+    @Override
+    public String getBodyContentType() {
+        return httpentity.getContentType().getValue();
+    }
+
+    @Override
+    public byte[] getBody() throws AuthFailureError {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            httpentity = entity.build();
+            httpentity.writeTo(bos);
+        } catch (IOException e) {
+            VolleyLog.e("IOException writing to ByteArrayOutputStream" +e.toString());
+        }catch (OutOfMemoryError e) {
+            VolleyLog.e("OutOfMemoryError" + e);
+        }
+        return bos.toByteArray();
+    }
+
+    @Override
+    protected Response<String> parseNetworkResponse(NetworkResponse response) {
+        try {
+            return Response.success(new String(response.data, "UTF-8"),
+                    getCacheEntry());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return Response.success(new String(response.data),
+                    getCacheEntry());
+        }
+    }
+
+    @Override
+    protected void deliverResponse(String response) {
+        mListener.onResponse(response);
+    }
+}
